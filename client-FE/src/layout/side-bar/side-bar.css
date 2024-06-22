@@ -1,0 +1,23 @@
+.chatMenu {
+  height: 100%;
+  font-size: 14px;
+}
+
+.chatMenuWrapper>img{
+  width:  100px;
+  margin: 10px 0 20px 10px;
+  
+}
+
+.chatMenuWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background-color: #fbfbfb;
+  border: 1px solid #d9dce0;
+  padding: 0;
+}
+
+

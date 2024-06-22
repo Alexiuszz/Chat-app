@@ -1,0 +1,51 @@
+.rightBarContainer {
+  width: 0;
+  height: 100%;
+  float: right;
+  background-color: #fff;
+  padding: 0;
+  box-sizing: border-box;
+  border-bottom: #d9dce0 1px solid;
+  transition: all 0.3s;
+}
+
+.barOpen {
+  width: 300px;
+  padding: 20px;
+}
+.rightBarContainer img {
+  cursor: pointer;
+  height: 20px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.rightBarContent {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-bottom: #d9dce0 1px solid;
+}
+.barOpen .rightBarContent,
+.barOpen img {
+  display: flex;
+}
+.rightBarContainer .noAvatarContainer {
+  height: 150px;
+  width: 150px;
+  margin-bottom: 20px;
+}
+
+.rightBarContainer p {
+  margin-bottom: 0px;
+  font-size: 14px;
+  color: #9e9e9e;
+}
+
+.rightBarContainer .userName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  font-family: "Inter Variable", sans-serif;
+}
