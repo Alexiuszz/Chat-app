@@ -250,7 +250,6 @@ export default function Messenger() {
     };
 
     if (currentChat) {
-      console.log(currentChat);
       socket.current.emit("private message", {
         message,
         to: currentChat.userID,
