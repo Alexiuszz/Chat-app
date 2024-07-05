@@ -5,6 +5,23 @@ const io = require("socket.io")(httpServer, {
   },
 });
 
+const redis = require("redis");
+
+// Create a Redis client
+const client = redis.createClient({
+  url: "redis://127.0.0.1:6379",
+});
+
+// Handle connection errors
+client.on("error", (err) => {
+  console.error("Redis client error:", err);
+});
+
+// Connect to Redis
+client.connect().catch((err) => {
+  console.error("Error connecting to Redis:", err);
+});
+
 const crypto = require("crypto");
 const randomId = () => crypto.randomBytes(8).toString("hex");
 
@@ -13,6 +30,25 @@ const sessionStore = new InMemorySessionStore();
 
 const { InMemoryMessageStore } = require("./storage/messageStore");
 const messageStore = new InMemoryMessageStore();
+
+// Log successful connection
+client.on("connect", async () => {
+  console.log("Connecting to Redis...");
+  //get users
+  await client.get("sessions").then((sessions) => {
+    const oldSessions = JSON.parse(sessions);
+    if (oldSessions?.length > 0) {
+      sessionStore.setSessions(oldSessions);
+      console.log(oldSessions);
+    }
+  });
+  // get messages
+  await client.get("messages").then((messages) => {
+    if (messages?.length > 0) {
+      messageStore.setMessages(JSON.parse(messages));
+    }
+  });
+});
 
 io.use((socket, next) => {
   const sessionID = socket.handshake.auth.sessionID;
@@ -23,6 +59,7 @@ io.use((socket, next) => {
       socket.userID = session.userID;
       socket.email = session.email;
       socket.name = session.name;
+      socket.blockedUsers = session.blockedUsers;
       socket.phoneNumber = session.phoneNumber;
       return next();
     }
@@ -37,12 +74,13 @@ io.use((socket, next) => {
   socket.email = user.email;
   socket.name = user.name;
   socket.phoneNumber = user.phoneNumber;
+  socket.blockedUsers = user.blockedUsers;
   next();
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   // persist session
-  sessionStore.saveSession(socket.sessionID, {
+  const sessions = sessionStore.saveSession(socket.sessionID, {
     userID: socket.userID,
     email: socket.email,
     name: socket.name,
@@ -50,6 +88,10 @@ io.on("connection", (socket) => {
     connected: true,
   });
 
+  await client.set("sessions", JSON.stringify(sessions));
+  await client.get("sessions").then((sessions) => {
+    console.log(sessions);
+  });
   // emit session details
   socket.emit("session", {
     sessionID: socket.sessionID,
@@ -98,7 +140,7 @@ io.on("connection", (socket) => {
   });
 
   // forward the private message to the right recipient
-  socket.on("private message", ({ message, to }) => {
+  socket.on("private message", async ({ message, to }) => {
     const newMessage = {
       message,
       from: socket.userID,
@@ -108,7 +150,8 @@ io.on("connection", (socket) => {
       .to(to)
       .to(socket.userID)
       .emit("private message", newMessage);
-    messageStore.saveMessage(newMessage);
+    let newMessages = messageStore.saveMessage(newMessage);
+    await client.set("messages", JSON.stringify(newMessages));
   });
 
   // notify users upon disconnection

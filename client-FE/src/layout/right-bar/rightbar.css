@@ -20,6 +20,23 @@
   display: none;
 }
 
+.authButton {
+  height: 40px;
+  border-radius: 6px;
+  border: none;
+  background-color: #6e80a4;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: "Inter";
+}
+.block {
+  margin-top: 40px;
+}
+.rightBarContent .unblock{
+  background-color: red;
+}
 .rightBarContent {
   display: none;
   flex-direction: column;

@@ -8,9 +8,12 @@ class InMemoryMessageStore extends MessageStore {
     super();
     this.messages = [];
   }
-
+  setMessages(messages) {
+    this.messages = [...messages];
+  }
   saveMessage(message) {
     this.messages.push(message);
+    return this.messages;
   }
 
   findMessagesForUser(userID) {

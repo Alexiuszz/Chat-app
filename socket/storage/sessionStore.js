@@ -16,13 +16,22 @@ class InMemorySessionStore extends SessionStore {
 
   saveSession(id, session) {
     this.sessions.set(id, session);
+    return this.sessions;
   }
 
   findAllSessions() {
     return [...this.sessions.values()];
   }
+
+  setSessions(sessions) {
+    if (sessions) {
+      this.sessions = new Map(
+        sessions.map((obj) => [obj.id, obj.name])
+      );
+    }
+  }
 }
 
 module.exports = {
-  InMemorySessionStore
+  InMemorySessionStore,
 };

@@ -3,7 +3,6 @@ import NoAvatar from "../no-avatar/NoAvatar";
 import "./conversation.css";
 
 export default function Conversation({ conversation, isCurrent }) {
-  console.log(conversation.messages);
   return (
     <div className={`conversation ${isCurrent && "currentChat"}`}>
       <div className="userInfo">

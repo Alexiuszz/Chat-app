@@ -1,18 +1,12 @@
 import "./messenger.css";
 import Message from "../../components/message/Message";
 import Send from "../../assets/icons/send.svg";
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { AuthContext } from "../../context/AuthContext";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SideBar from "../../layout/side-bar/SideBar";
 import { io } from "socket.io-client";
 import NoAvatar from "../../components/no-avatar/NoAvatar";
 import Rightbar from "../../layout/right-bar/Rightbar";
+import { register } from "../../utils/storage";
 
 export default function Messenger() {
   const [openRightBar, setOpenRightBar] = useState(false);
@@ -21,14 +15,41 @@ export default function Messenger() {
   const [incomingMessage, setIncomingMessage] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [users, setUsers] = useState([]);
-  const { user } = useContext(AuthContext);
+  const [user, setUser] = useState(null);
   const socket = useRef();
   const scrollRef = useRef();
 
   const initReactiveProperties = (user) => {
     user.connected = true;
     user.messages = [];
+    user.blockedUsers = [];
     user.hasNewMessages = false;
+  };
+
+  useEffect(() => {
+    let currUser = JSON.parse(localStorage.getItem("user")) || null;
+    setUser(currUser);
+  }, []);
+
+  const blockUser = (chat) => {
+    let update = user;
+    // console.log(chat, update);
+    update.blockedUsers = [...(user?.blockedUsers || []), chat];
+    setUser({ user: update });
+    register(update);
+  };
+  const unblock = (chat) => {
+    let update = user;
+    // console.log(chat, update);
+    update.blockedUsers = update.blockedUsers?.filter(
+      (u) => u.email !== chat.email
+    );
+    setUser({ user: update });
+    register(update);
+  };
+
+  const checkBlocked = (chat) => {
+    return user?.blockedUsers?.some((u) => u.email === chat.email);
   };
 
   //Initial socket connection
@@ -73,6 +94,7 @@ export default function Messenger() {
         if (user.self) {
           user.connected = false;
           updateUser(user);
+          setUser({ user: user });
         }
       });
     });
@@ -94,22 +116,24 @@ export default function Messenger() {
         user.self = user.userID === socket.current.id;
         initReactiveProperties(user);
       });
-      // put the current user first, and then sort by username
+
+      // put the current user first, and then sort by email
       const sortedUsers = newUsers.sort((a, b) => {
         if (a.self) return -1;
         if (b.self) return 1;
-        if (a.username < b.username) return -1;
-        return a.username > b.username ? 1 : 0;
+        if (a.email < b.email) return -1;
+        return a.email > b.email ? 1 : 0;
       });
       setUsers(sortedUsers);
     });
 
     socket.current.on("user connected", (newUser) => {
       initReactiveProperties(newUser);
-
+      console.log("user connected");
       //check if user already registered and update socket ID
       setUsers((prevState) => {
         if (prevState.some((u) => u.email === newUser.email)) {
+          console.log(newUser);
           let newUsers = prevState.map((u) =>
             u.email !== newUser.email ? u : newUser
           );
@@ -121,25 +145,32 @@ export default function Messenger() {
           setCurrentChat((prevState) => ({
             ...prevState,
             userID: newUser.userID,
+            connected: true,
           }));
         }
     });
 
     socket.current.on("user disconnected", (email) => {
-      console.log("user disconnected", email, users);
+      // console.log("user disconnected", email, users);
 
-      for (let i = 0; i < users.length; i++) {
-        const user = users[i];
-        if (user.email === email) {
-          console.log("found disconnect");
-          user.connected = false;
-          updateUser(user);
-          break;
+      setUsers((prevState) => {
+        for (let i = 0; i < prevState.length; i++) {
+          const user = prevState[i];
+          if (user.email === email) {
+            // console.log("found disconnect");
+            user.connected = false;
+            if (prevState.some((u) => u.email === user.email)) {
+              let users = prevState.map((u) =>
+                u.email !== user.email ? u : user
+              );
+              return users;
+            } else return [...prevState, user];
+          }
         }
-      }
+      });
     });
     socket.current.on("private message", ({ message, from, to }) => {
-      console.log("new message from", from);
+      // console.log("new message from", from);
       setIncomingMessage({ message, from: from, to: to });
     });
 
@@ -163,12 +194,17 @@ export default function Messenger() {
           sender.userID ===
           (fromSelf ? incomingMessage.to : incomingMessage.from)
         ) {
-          sender.messages.push({
-            message: incomingMessage.message,
-            fromSelf,
-          });
-          if (sender !== currentChat) {
-            sender.hasNewMessages = true;
+          const isBlocked = user.blockedUsers?.some(
+            (u) => u.email === sender.email
+          );
+          if (!isBlocked) {
+            sender.messages.push({
+              message: incomingMessage.message,
+              fromSelf,
+            });
+            if (sender !== currentChat) {
+              sender.hasNewMessages = true;
+            }
           }
           updateUser(sender);
           break;
@@ -199,12 +235,12 @@ export default function Messenger() {
 
   // track current chat changes
   useEffect(() => {
-    console.log(currentChat?.userID);
+    // console.log(currentChat?.userID);
     if (currentChat) updateUser(currentChat);
   }, [currentChat]);
 
   useEffect(() => {
-    console.log(users);
+    // console.log(users);
   }, [users]);
 
   //update user in users state
@@ -226,7 +262,7 @@ export default function Messenger() {
 
   const addConversation = (receiver) => {
     //ensure conversation is not repeated
-    console.log(receiver);
+    // console.log(receiver);
     setConversations((prevState) => {
       if (prevState.some((chat) => chat.email === receiver.email))
         return prevState;
@@ -271,7 +307,7 @@ export default function Messenger() {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [user.messages]);
+  }, [user?.messages]);
 
   return (
     <div className="messenger">
@@ -300,6 +336,15 @@ export default function Messenger() {
         <div className="chatBoxWrapper">
           {currentChat ? (
             <>
+              {/* {!checkBlocked(currentChat) && (
+                <div className="pop-up close-pop-up">
+                  <span>Block User?</span>
+                  <div className="btns"> 
+                    <button>Close</button>
+                    <button>Close</button>
+                  </div>
+                </div>
+              )} */}
               <div className="chatBoxTop">
                 <div className="today">Today</div>
                 {currentChat.messages?.map((m, i) => {
@@ -335,7 +380,10 @@ export default function Messenger() {
       <Rightbar
         user={currentChat}
         open={openRightBar}
+        blockUser={() => blockUser(currentChat)}
         close={() => setOpenRightBar(false)}
+        unblock={() => unblock(currentChat)}
+        isBlocked={currentChat && checkBlocked(currentChat)}
       />
     </div>
   );

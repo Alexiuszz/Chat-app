@@ -3,19 +3,22 @@ import {
   RouterProvider,
   Navigate,
 } from "react-router-dom";
-import { useContext,  } from "react";
-import { AuthContext } from "./context/AuthContext";
+import { useEffect, useState } from "react";
 import ErrorPage from "./layout/ErrorPage";
 import Register from "./views/register/Register.jsx";
 import Messenger from "./views/messenger/Messenger.jsx";
 import "@fontsource/inter";
 // Supports weights 100-900
-import '@fontsource-variable/inter';
+import "@fontsource-variable/inter";
 
 function App() {
-  // Get user from context provider
-  const { user } = useContext(AuthContext);
+  const [user, setUser] = useState(null);
 
+  // Get user from context provider
+  useEffect(() => {
+    let currUser = JSON.parse(localStorage.getItem("user")) || null;
+    setUser(currUser);
+  }, []);
   const router = createBrowserRouter([
     {
       path: "/",
@@ -28,7 +31,6 @@ function App() {
       errorElement: <ErrorPage />,
     },
   ]);
-
 
   return <RouterProvider router={router} />;
 }

@@ -17,6 +17,7 @@ export default function Register() {
       name: name.current.value,
       email: email.current.value,
       phoneNumber: phoneNumber.current.value,
+      blockedUsers: []
     };
     // clear session
     localStorage.removeItem("sessionID");
