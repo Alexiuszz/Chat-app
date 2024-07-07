@@ -1,32 +1,53 @@
 import NoAvatar from "../../components/no-avatar/NoAvatar";
 import Close from "../../assets/icons/close.svg";
 import "./rightbar.css";
+import { useEffect, useState } from "react";
 
 function Rightbar({
   user,
   open,
   close,
   blockUser,
-  isBlocked,
+  currChat,
   unblock,
 }) {
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  // useEffect(() => {
+  //   console.log(user);
+  //   if (user?.blockedUsers && currChat) {
+  //     setIsBlocked(
+  //       user?.blockedUsers?.some((u) => u.email === currChat.email)
+  //     );
+  //   }
+  // });
+
   return (
     <div className={`rightBarContainer ${open && "barOpen"}`}>
       <img onClick={close} src={Close} alt="close" />
       <div className="rightBarContent">
-        <NoAvatar name={user?.name} />
-        <p className="userName">{user?.name}</p>
-        <p className="userContact">{user?.phoneNumber}</p>
-        <p className="userContact">{user?.email}</p>
-        {isBlocked ? (
+        <NoAvatar name={currChat?.name} />
+        <p className="userName">{currChat?.name}</p>
+        <p className="userContact">{currChat?.phoneNumber}</p>
+        <p className="userContact">{currChat?.email}</p>
+        {isBlocked? (
           <button
-            onClick={unblock}
+            onClick={() => {
+              setIsBlocked((prevState) => !prevState);
+              unblock();
+            }}
             className="unblock block authButton"
           >
             Unblock
           </button>
         ) : (
-          <button className="block authButton" onClick={blockUser}>
+          <button
+            className="block authButton"
+            onClick={() => {
+              setIsBlocked((prevState) => !prevState);
+              blockUser();
+            }}
+          >
             Block User
           </button>
         )}

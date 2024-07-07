@@ -16,7 +16,7 @@ class InMemorySessionStore extends SessionStore {
 
   saveSession(id, session) {
     this.sessions.set(id, session);
-    return this.sessions;
+    return [...this.sessions.entries()];
   }
 
   findAllSessions() {
@@ -25,9 +25,7 @@ class InMemorySessionStore extends SessionStore {
 
   setSessions(sessions) {
     if (sessions) {
-      this.sessions = new Map(
-        sessions.map((obj) => [obj.id, obj.name])
-      );
+      this.sessions = new Map(sessions);
     }
   }
 }

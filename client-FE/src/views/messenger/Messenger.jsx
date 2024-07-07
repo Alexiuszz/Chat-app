@@ -33,9 +33,8 @@ export default function Messenger() {
 
   const blockUser = (chat) => {
     let update = user;
-    // console.log(chat, update);
-    update.blockedUsers = [...(user?.blockedUsers || []), chat];
-    setUser({ user: update });
+    update.blockedUsers ? update.blockedUsers.push(chat) : [chat];
+    setUser(update);
     register(update);
   };
   const unblock = (chat) => {
@@ -44,12 +43,8 @@ export default function Messenger() {
     update.blockedUsers = update.blockedUsers?.filter(
       (u) => u.email !== chat.email
     );
-    setUser({ user: update });
+    setUser(update);
     register(update);
-  };
-
-  const checkBlocked = (chat) => {
-    return user?.blockedUsers?.some((u) => u.email === chat.email);
   };
 
   //Initial socket connection
@@ -61,7 +56,9 @@ export default function Messenger() {
       socket.current.auth = { sessionID };
       socket.current.connect();
     } else {
-      socket.current.auth = { user };
+      let currUser = JSON.parse(localStorage.getItem("user"));
+      socket.current.auth = { user: currUser };
+      console.log(currUser);
       socket.current.connect();
     }
 
@@ -127,18 +124,25 @@ export default function Messenger() {
       setUsers(sortedUsers);
     });
 
-    socket.current.on("user connected", (newUser) => {
-      initReactiveProperties(newUser);
+    socket.current.on("user connected", (newConnection) => {
       console.log("user connected");
+      let newUser = newConnection;
+      console.log(newUser);
       //check if user already registered and update socket ID
       setUsers((prevState) => {
-        if (prevState.some((u) => u.email === newUser.email)) {
-          console.log(newUser);
-          let newUsers = prevState.map((u) =>
-            u.email !== newUser.email ? u : newUser
-          );
-          return newUsers;
-        } else return [...prevState, newUser];
+        for (let i = 0; i < prevState.length; i++) {
+          const existingUser = prevState[i];
+          if (existingUser.email === newUser.email) {
+            existingUser.connected = true;
+            let newUsers = prevState.map((u) =>
+              u.email !== newUser.email ? u : existingUser
+            );
+            return newUsers;
+          }
+        }
+
+        initReactiveProperties(newUser);
+        return [...prevState, newUser];
       });
       if (currentChat)
         if (currentChat.email === newUser.email) {
@@ -240,7 +244,7 @@ export default function Messenger() {
   }, [currentChat]);
 
   useEffect(() => {
-    // console.log(users);
+    console.log(users);
   }, [users]);
 
   //update user in users state
@@ -378,12 +382,12 @@ export default function Messenger() {
         </div>
       </div>
       <Rightbar
-        user={currentChat}
+        currChat={currentChat}
         open={openRightBar}
         blockUser={() => blockUser(currentChat)}
         close={() => setOpenRightBar(false)}
         unblock={() => unblock(currentChat)}
-        isBlocked={currentChat && checkBlocked(currentChat)}
+        user={user}
       />
     </div>
   );

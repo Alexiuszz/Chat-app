@@ -44,8 +44,10 @@ client.on("connect", async () => {
   });
   // get messages
   await client.get("messages").then((messages) => {
+    let oldMessages = JSON.parse(messages);
     if (messages?.length > 0) {
-      messageStore.setMessages(JSON.parse(messages));
+      messageStore.setMessages(oldMessages);
+      // console.log(oldMessages);
     }
   });
 });
@@ -79,6 +81,7 @@ io.use((socket, next) => {
 });
 
 io.on("connection", async (socket) => {
+  console.log("user connected");
   // persist session
   const sessions = sessionStore.saveSession(socket.sessionID, {
     userID: socket.userID,
@@ -89,9 +92,7 @@ io.on("connection", async (socket) => {
   });
 
   await client.set("sessions", JSON.stringify(sessions));
-  await client.get("sessions").then((sessions) => {
-    console.log(sessions);
-  });
+  
   // emit session details
   socket.emit("session", {
     sessionID: socket.sessionID,
@@ -110,7 +111,7 @@ io.on("connection", async (socket) => {
     .forEach((message) => {
       const { from, to } = message;
       const otherUser = socket.userID === from ? to : from;
-      console.log(message);
+      // console.log(message);
       if (messagesPerUser.has(otherUser)) {
         messagesPerUser.get(otherUser).push(message);
       } else {
