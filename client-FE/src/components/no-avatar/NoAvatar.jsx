@@ -6,7 +6,7 @@ function NoAvatar({ name, online=false }) {
       {/* Break Name down and return Initials */}
       {online && <div className="online"></div>}
       {name?.split(" ")[0].charAt(0).toUpperCase()}
-      {name?.split(" ")[0].charAt(0).toUpperCase()}
+      {name?.split(" ")[1]?.charAt(0).toUpperCase()}
     </div>
   );
 }
